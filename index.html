@@ -6,9 +6,8 @@
     <title>Mô phỏng Thí nghiệm: Đun nóng đường</title>
     <style>
         :root {
-            --bg-color: #e0f2fe; /* Màu nền xanh nhạt giống hình */
+            --bg-color: #e0f2fe;
             --stand-color: #95a5a6;
-            --glass-color: rgba(255, 255, 255, 0.7);
             --liquid-color: #a8e6cf;
         }
 
@@ -54,7 +53,7 @@
         /* Đế và cột giá đỡ */
         .stand-base {
             position: absolute;
-            bottom: 30px;
+            top: 400px; /* Cố định sát đáy */
             left: 150px;
             width: 300px;
             height: 15px;
@@ -63,10 +62,10 @@
         }
         .stand-pole {
             position: absolute;
-            bottom: 45px;
+            top: 100px;
             left: 180px;
             width: 12px;
-            height: 320px;
+            height: 300px;
             background-color: var(--stand-color);
             border-radius: 5px 5px 0 0;
         }
@@ -74,7 +73,7 @@
         /* Chốt và kẹp ngang */
         .stand-clamp {
             position: absolute;
-            top: 140px;
+            top: 250px; /* Hạ thấp kẹp */
             left: 170px;
             width: 32px;
             height: 25px;
@@ -83,7 +82,7 @@
         }
         .stand-arm {
             position: absolute;
-            top: 148px;
+            top: 258px;
             left: 195px;
             width: 180px;
             height: 8px;
@@ -93,7 +92,7 @@
         /* Đĩa kim loại */
         .dish {
             position: absolute;
-            top: 142px;
+            top: 252px; /* Nằm ngay trên tay kẹp */
             left: 300px;
             width: 140px;
             height: 6px;
@@ -116,10 +115,9 @@
         /* Đèn cồn */
         .lamp-container {
             position: absolute;
-            bottom: 45px;
+            top: 290px; /* Đặt chính xác để đáy đèn chạm đế giá đỡ */
             left: 325px;
             width: 90px;
-            height: 120px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -135,7 +133,7 @@
         
         .lamp-body {
             width: 90px;
-            height: 70px;
+            height: 100px; /* Kéo dài thân đèn chạm đế */
             background: linear-gradient(to bottom, rgba(255,255,255,0.4) 45%, var(--liquid-color) 45%);
             border: 2px solid #2d3436;
             border-radius: 40px 40px 15px 15px;
@@ -150,7 +148,7 @@
             top: -15px;
             left: 40px;
             width: 8px;
-            height: 85px;
+            height: 110px;
             background: repeating-linear-gradient(
                 -45deg,
                 #b2bec3,
@@ -165,7 +163,7 @@
         /* Ngọn lửa */
         .flame {
             position: absolute;
-            top: 2px;
+            top: 255px; /* Ôm khít từ đầu bấc lên đáy đĩa */
             left: 357px;
             width: 25px;
             height: 40px;
@@ -186,15 +184,14 @@
         /* --- VẬT LIỆU: ĐƯỜNG --- */
         #sugar {
             position: absolute;
-            bottom: 6px;
+            bottom: 6px; /* Nằm ngay trong đĩa */
             left: 20px;
             width: 100px;
             height: 25px;
-            background-color: #ffffff; /* Màu trắng ban đầu */
+            background-color: #ffffff;
             border-radius: 50px 50px 10px 10px;
             transform-origin: bottom center;
             box-shadow: inset 0 -3px 5px rgba(0,0,0,0.1);
-            transition: none; /* Điều khiển bằng JS */
         }
 
         /* Khói */
@@ -307,7 +304,6 @@
 </div>
 
 <script>
-    // --- KHỞI TẠO BIẾN ---
     const sugar = document.getElementById('sugar');
     const flame = document.getElementById('flame');
     const statusBox = document.getElementById('status-box');
@@ -322,17 +318,14 @@
     let animationId = null;
     let isPlaying = false;
     let timer = 0; 
-    const MAX_TIME = 3000; // 30 giây (mỗi tick ~ 10ms)
-    let currentStepIndex = 0; // 0: Chuẩn bị, 1: Nóng chảy, 2: Caramel, 3: Phân hủy
+    const MAX_TIME = 3000;
+    let currentStepIndex = 0;
 
-    // --- HÀM HỖ TRỢ NỘI SUY MÀU SẮC ---
-    // Chuyển đổi HEX sang RGB
     function hexToRgb(hex) {
         let bigint = parseInt(hex.replace('#', ''), 16);
         return { r: (bigint >> 16) & 255, g: (bigint >> 8) & 255, b: bigint & 255 };
     }
 
-    // Tính toán màu trung gian
     function lerpColor(c1, c2, factor) {
         const r = Math.round(c1.r + factor * (c2.r - c1.r));
         const g = Math.round(c1.g + factor * (c2.g - c1.g));
@@ -340,18 +333,13 @@
         return `rgb(${r}, ${g}, ${b})`;
     }
 
-    // Các mốc màu sắc
-    const COLOR_WHITE = hexToRgb('#ffffff');      // Rắn
-    const COLOR_LIQUID = hexToRgb('#fef08a');     // Lỏng, vàng nhạt
-    const COLOR_CARAMEL = hexToRgb('#92400e');    // Nâu cánh gián
-    const COLOR_CARBON = hexToRgb('#1c1917');     // Đen khét
+    const COLOR_WHITE = hexToRgb('#ffffff');      
+    const COLOR_LIQUID = hexToRgb('#fef08a');     
+    const COLOR_CARAMEL = hexToRgb('#92400e');    
+    const COLOR_CARBON = hexToRgb('#1c1917');     
 
-    // --- LOGIC MÔ PHỎNG THEO THỜI GIAN ---
     function updateSimulationVisuals() {
-        // Cập nhật thanh tiến trình
         progressBar.style.width = `${(timer / MAX_TIME) * 100}%`;
-
-        // Tính toán thời gian (giây)
         const seconds = timer / 100;
 
         let scaleY = 1;
@@ -360,57 +348,49 @@
         let text = '';
 
         if (seconds < 5) {
-            // 0 - 5s: Bắt đầu đun, chưa có hiện tượng rõ rệt
             color = `rgb(${COLOR_WHITE.r}, ${COLOR_WHITE.g}, ${COLOR_WHITE.b})`;
             text = "<b>Giai đoạn 1 (0-5s):</b> Đang đun nóng. Đường vẫn ở thể rắn, màu trắng, chưa bị biến đổi.";
             currentStepIndex = 0;
         } 
         else if (seconds >= 5 && seconds < 15) {
-            // 5 - 15s: NÓNG CHẢY (Thể rắn -> lỏng, trong suốt/vàng nhạt)
             const factor = (seconds - 5) / 10;
             color = lerpColor(COLOR_WHITE, COLOR_LIQUID, factor);
-            scaleY = 1 - (factor * 0.6); // Xẹp xuống 40% chiều cao
-            scaleX = 1 + (factor * 0.1); // Lan nhẹ ra 2 bên
+            scaleY = 1 - (factor * 0.6); 
+            scaleX = 1 + (factor * 0.1); 
             text = "<b>Giai đoạn 2 - Nóng chảy (~150°C):</b> Đường đang chuyển từ thể rắn sang thể <b>lỏng</b>, trở nên đặc sệt và có màu vàng nhạt.";
             currentStepIndex = 1;
         } 
         else if (seconds >= 15 && seconds < 24) {
-            // 15 - 24s: CARAMEL HÓA (Thể lỏng, chuyển nâu cánh gián)
             const factor = (seconds - 15) / 9;
             color = lerpColor(COLOR_LIQUID, COLOR_CARAMEL, factor);
             scaleY = 0.4;
             scaleX = 1.1;
-            // Hiệu ứng sôi lăn tăn nhẹ (thay đổi scale nhanh)
             if (isPlaying && Math.random() > 0.5) scaleY = 0.38;
             text = "<b>Giai đoạn 3 - Phản ứng Caramel:</b> Đường lỏng chuyển dần sang màu <b>nâu cánh gián</b>. Có mùi thơm đặc trưng, sủi bọt nhẹ.";
             currentStepIndex = 2;
         } 
         else if (seconds >= 24 && seconds <= 30) {
-            // 24 - 30s: PHÂN HỦY (Thành than đen)
             const factor = (seconds - 24) / 6;
             color = lerpColor(COLOR_CARAMEL, COLOR_CARBON, factor);
-            scaleY = 0.4 - (factor * 0.1); // Xẹp thêm chút thành bã
+            scaleY = 0.4 - (factor * 0.1); 
             scaleX = 1.1;
             text = "<b>Giai đoạn 4 - Phân hủy (Cháy):</b> Nhiệt độ quá cao khiến đường mất nước, phân hủy thành <b>cacbon (than)</b> màu đen, bốc khói khét.";
             currentStepIndex = 3;
 
-            // Tạo hiệu ứng khói bay lên
             if (isPlaying && timer % 10 === 0) {
                 createSmoke();
             }
         } 
         else if (seconds > 30) {
-            // KẾT LUẬN CUỐI CÙNG
             color = `rgb(${COLOR_CARBON.r}, ${COLOR_CARBON.g}, ${COLOR_CARBON.b})`;
             scaleY = 0.3;
             scaleX = 1.1;
             text = "✨ <b>KẾT LUẬN:</b> Dưới tác dụng của nhiệt độ, đường đã bị biến đổi hoàn toàn tính chất, chuyển từ thể rắn màu trắng sang chất lỏng, cuối cùng tạo thành chất rắn màu đen (than).";
             pauseExperiment();
             btnStart.disabled = true;
-            flame.style.opacity = "0"; // Tắt lửa khi xong
+            flame.style.opacity = "0"; 
         }
 
-        // Áp dụng CSS
         sugar.style.backgroundColor = color;
         sugar.style.transform = `scale(${scaleX}, ${scaleY})`;
         if (statusBox.innerHTML !== text) statusBox.innerHTML = text;
@@ -419,22 +399,19 @@
     function createSmoke() {
         const smoke = document.createElement('div');
         smoke.classList.add('smoke');
-        // Vị trí ngẫu nhiên trên đĩa đường
         const randomLeft = 320 + Math.random() * 60;
         smoke.style.left = `${randomLeft}px`;
-        smoke.style.top = '140px';
+        smoke.style.top = '240px'; // Điều chỉnh lại tọa độ khói sinh ra sát đĩa
         canvas.appendChild(smoke);
 
-        // Tự động xóa khói sau khi bay xong
         setTimeout(() => {
             if(canvas.contains(smoke)) canvas.removeChild(smoke);
         }, 2000);
     }
 
-    // --- ĐIỀU KHIỂN CHÍNH ---
     function loop() {
         if (!isPlaying) return;
-        timer += 2; // Tăng tốc độ render
+        timer += 2; 
         updateSimulationVisuals();
         if (timer <= MAX_TIME) {
             animationId = requestAnimationFrame(loop);
@@ -444,7 +421,7 @@
     function startExperiment() {
         if (timer >= MAX_TIME) return;
         isPlaying = true;
-        flame.style.opacity = "1"; // Hiện lửa
+        flame.style.opacity = "1"; 
         
         btnStart.disabled = true;
         btnPause.disabled = false;
@@ -477,19 +454,17 @@
         btnStart.disabled = false;
         btnStep.disabled = false;
 
-        // Xóa khói còn thừa
         document.querySelectorAll('.smoke').forEach(el => el.remove());
     }
 
     function stepExperiment() {
         pauseExperiment();
-        // Nhảy thẳng đến các mốc thời gian quan trọng
         if (currentStepIndex === 0) {
-            timer = 1000; // Nhảy đến 10s (Nóng chảy)
+            timer = 1000; 
         } else if (currentStepIndex === 1) {
-            timer = 2000; // Nhảy đến 20s (Caramel)
+            timer = 2000; 
         } else if (currentStepIndex === 2) {
-            timer = 2800; // Nhảy đến 28s (Phân hủy ra than)
+            timer = 2800; 
         } else {
             resetExperiment();
             return;
@@ -497,17 +472,14 @@
         
         flame.style.opacity = "1";
         updateSimulationVisuals();
-        // Sau khi render khung hình, tắt lửa để học sinh quan sát tĩnh
         setTimeout(() => flame.style.opacity = "0", 300);
     }
 
-    // --- GÁN SỰ KIỆN NÚT BẤM ---
     btnStart.addEventListener('click', startExperiment);
     btnPause.addEventListener('click', pauseExperiment);
     btnReset.addEventListener('click', resetExperiment);
     btnStep.addEventListener('click', stepExperiment);
 
-    // Khởi tạo hiển thị ban đầu
     updateSimulationVisuals();
 </script>
 
